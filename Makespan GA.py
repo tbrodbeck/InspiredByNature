@@ -1,15 +1,8 @@
-
-# coding: utf-8
-
-# In[12]:
-
-
 import numpy as np
 from abc import ABC, abstractmethod
 
 
-# In[2]:
-
+''' The problems '''
 
 def get_problem_1():
     process_200 = np.random.randint(10, 1001, 200)
@@ -35,7 +28,7 @@ def get_problem_3():
     return processing
 
 
-# In[55]:
+''' Modules '''
 
 class Initializer(ABC):
     @abstractmethod
@@ -70,17 +63,6 @@ class Random_Initializer(Initializer):
         return init
 
 
-# In[ ]:
-
-
-class Evaluator():
-    def evaluate():
-        pass
-
-
-# In[56]:
-
-
 class Selector():
     def roulette(self):
         raise NotImplementedError
@@ -88,20 +70,115 @@ class Selector():
         return max(candidates)
 
 
+class Recombiner():
+    """
+    Recombines two parents into two new children with possibly different genes
+    """
+
+    def __init__(self, chromosomes, cross_probability=.5):
+        """
+        Inits the recombiner with a defined crossover probability, defaulting to .5
+        """
+        self.chromosomes = chromosomes
+        self.crossover_probability = cross_probability
+
+    def crossover_random_num(self):
+        """
+        Generates a random r to check if crossover occurs
+        """
+        return np.random.random()
+
+    def get_random_pair(self):
+        """
+        Pulls out two random chromosomes to crossover.  If the same pair is pulled, generate another one until
+        different chromosomes are pulled.
+        """
+        pair = np.random.randint(0, len(self.chromosomes), 2)
+        while pair[0] == pair[1]:
+            pair[1] = np.random.randint(0, len(self.chromosomes))
+        return pair
+
+    def one_point_crossover(self):
+        """
+        One point crossover implementation
+        """
+        pair = self.get_random_pair()
+        # Define the parents
+        mom = self.chromosomes[pair[0]]
+        dad = self.chromosomes[pair[1]]
+        # See if they crossover
+        cross_chance = self.crossover_random_num()
+        if cross_chance < self.crossover_probability:
+            # Cross over occurs, generate crossover point
+            crossover_point = np.random.randint(1, len(self.chromosomes[1]))
+            child1, child2 = [], []
+            from_mom = True
+            # Step through alleles
+            for i in range(len(self.chromosomes[1])):
+                if i == crossover_point:  # if hit crossover point, swap allele selection
+                    from_mom = False
+                if from_mom:
+                    child1.append(mom[i])
+                    child2.append(dad[i])
+                else:
+                    child1.append(dad[i])
+                    child2.append(mom[i])
+            return child1, child2
+        else:  # if no crossover, return parents
+            return mom, dad
+
+    def two_point_crossover(self):
+        """
+        Two point crossover implementation
+        """
+        pair = self.get_random_pair()
+        # Define the parents
+        mom = self.chromosomes[pair[0]]
+        dad = self.chromosomes[pair[1]]
+        # See if they crossover
+        cross_chance = self.crossover_random_num()
+        if cross_chance < self.crossover_probability:
+            # Cross over occurs, generate crossover points
+            crossover_point1 = np.random.randint(1, len(self.chromosomes[1]))
+            crossover_point2 = np.random.randint(1, len(self.chromosomes[1]))
+            if crossover_point2 < crossover_point1:  # make sure they are in order
+                temp = crossover_point2
+                crossover_point2 = crossover_point1
+                crossover_point1 = temp
+            while crossover_point1 == crossover_point2:  # make sure they are not the same
+                crossover_point2 = np.random.randint(1, len(self.chromosomes[1]))
+            child1, child2 = [], []
+            from_mom = True
+            for i in range(len(self.chromosomes[1])):
+                if i == crossover_point1:  # if hit crossover point, swap allele selection
+                    from_mom = False
+                if i == crossover_point2:  # if hit crossover point, swap allele selection
+                    from_mom = True
+                if from_mom:
+                    child1.append(mom[i])
+                    child2.append(dad[i])
+                else:
+                    child1.append(dad[i])
+                    child2.append(mom[i])
+            return child1, child2
+        else:  # if no crossover, return parents
+            return mom, dad
 
 class Genetic_Algotihm:
 
     def __init__(self, initializer, selector, recombiner, mutator, replacer):
-        self.inializer = initializer
+        self.initializer = initializer
         self.selector = selector
         self.recombiner = recombiner
         self.mutator = mutator
         self.replacer = replacer
 
-        self.population = initializer.initialize()
+        self.population = self.initializer.initialize()
 
     def evaluate_population(self):
-        pass
+        for chromosome in self.population:
+            for index, job in enumerate(chromosome):
+
 
 ''' hyperparameters '''
 population_size = 1
@@ -109,11 +186,13 @@ num_jobs = 300
 num_machines = 20
 
 ''' main script '''
-equal_initializer = Equal_Initializer(num_jobs,num_machines,population_size)
+#equal_initializer = Equal_Initializer(num_jobs,num_machines,population_size)
 random_initializer = Random_Initializer(num_jobs,num_machines,population_size)
 
-ga_equal = Genetic_Algotihm(equal_initializer, 0,0,0,0)
+#ga_equal = Genetic_Algotihm(equal_initializer, 0,0,0,0)
 ga_random = Genetic_Algotihm(random_initializer,0,0,0,0)
-print(ga_equal.population)
+#print(ga_equal.population)
 print(ga_random.population)
+
+
 
