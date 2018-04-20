@@ -29,32 +29,33 @@ def get_problem_3():
 
 ''' Modules '''
 class Initializer(ABC):
+    def __init__(self, num_jobs, num_machines, population_size):
+        self.num_jobs = num_jobs
+        self.num_machines = num_machines
+        self.population_size = population_size
+
     @abstractmethod
     def initialize(self):
         pass
 
 class Equal_Initializer(Initializer):
-    def __init__(self, num_jobs, num_machines, population_size):
-        self.num_jobs = num_jobs
-        self.num_machines = num_machines
-        self.population_size = population_size
 
     def initialize(self):
-        per_machine = self.num_jobs // self.num_machines
-        init = []
-        for i in range(self.num_machines):
-            init.append([i+1] * per_machine)
-        init = np.ravel(np.asarray(init))
-        if len(init) != self.num_jobs:
-            for i in range(self.num_jobs - len(init)):
-                init = np.append(init, 1)
-        return init
+        population_init = []
+        for i in range(self.population_size):
+            per_machine = self.num_jobs // self.num_machines
+            init = []
+            for i in range(self.num_machines):
+                init.append([i+1] * per_machine)
+            init = np.ravel(np.asarray(init))
+            if len(init) != self.num_jobs:
+                for i in range(self.num_jobs - len(init)):
+                    init = np.append(init, 1)
+            population_init.append(init)
+        return population_init
 
 class Random_Initializer(Initializer):
-    def __init__(self, num_jobs, num_machines, population_size):
-        self.num_jobs = num_jobs
-        self.num_machines = num_machines
-        self.population_size = population_size
+
     def initialize(self):
         init = np.zeros((self.population_size, self.num_jobs))
         for i in range(self.population_size):
@@ -69,16 +70,15 @@ class Selector():
         return max(candidates)
 
 
-class Recombiner():
+class Recombiner(ABC):
     """
     Recombines two parents into two new children with possibly different genes
     """
 
-    def __init__(self, chromosomes, cross_probability=.5):
+    def __init__(self, cross_probability=.5):
         """
         Inits the recombiner with a defined crossover probability, defaulting to .5
         """
-        self.chromosomes = chromosomes
         self.crossover_probability = cross_probability
 
     def crossover_random_num(self):
@@ -87,33 +87,39 @@ class Recombiner():
         """
         return np.random.random()
 
-    def get_random_pair(self):
+    def get_random_pair(self, chromosomes):
         """
         Pulls out two random chromosomes to crossover.  If the same pair is pulled, generate another one until
         different chromosomes are pulled.
         """
-        pair = np.random.randint(0, len(self.chromosomes), 2)
+        pair = np.random.randint(0, len(chromosomes), 2)
         while pair[0] == pair[1]:
-            pair[1] = np.random.randint(0, len(self.chromosomes))
+            pair[1] = np.random.randint(0, len(chromosomes))
         return pair
 
-    def one_point_crossover(self):
+    @abstractmethod
+    def recombine(self, chromosomes):
+        pass
+
+class One_Point_Crossover(Recombiner):
+
+    def recombine(self, chromosomes):
         """
         One point crossover implementation
         """
-        pair = self.get_random_pair()
+        pair = self.get_random_pair(chromosomes)
         # Define the parents
-        mom = self.chromosomes[pair[0]]
-        dad = self.chromosomes[pair[1]]
+        mom = chromosomes[pair[0]]
+        dad = chromosomes[pair[1]]
         # See if they crossover
         cross_chance = self.crossover_random_num()
         if cross_chance < self.crossover_probability:
             # Cross over occurs, generate crossover point
-            crossover_point = np.random.randint(1, len(self.chromosomes[1]))
+            crossover_point = np.random.randint(1, len(chromosomes[1]))
             child1, child2 = [], []
             from_mom = True
             # Step through alleles
-            for i in range(len(self.chromosomes[1])):
+            for i in range(len(chromosomes[1])):
                 if i == crossover_point:  # if hit crossover point, swap allele selection
                     from_mom = False
                 if from_mom:
@@ -126,29 +132,31 @@ class Recombiner():
         else:  # if no crossover, return parents
             return mom, dad
 
-    def two_point_crossover(self):
+
+class Two_Point_Crossover(Recombiner):
+    def recombine(self, chromosomes):
         """
         Two point crossover implementation
         """
-        pair = self.get_random_pair()
+        pair = self.get_random_pair(chromosomes)
         # Define the parents
-        mom = self.chromosomes[pair[0]]
-        dad = self.chromosomes[pair[1]]
+        mom = chromosomes[pair[0]]
+        dad = chromosomes[pair[1]]
         # See if they crossover
         cross_chance = self.crossover_random_num()
         if cross_chance < self.crossover_probability:
             # Cross over occurs, generate crossover points
-            crossover_point1 = np.random.randint(1, len(self.chromosomes[1]))
-            crossover_point2 = np.random.randint(1, len(self.chromosomes[1]))
+            crossover_point1 = np.random.randint(1, len(chromosomes[1]))
+            crossover_point2 = np.random.randint(1, len(chromosomes[1]))
             if crossover_point2 < crossover_point1:  # make sure they are in order
                 temp = crossover_point2
                 crossover_point2 = crossover_point1
                 crossover_point1 = temp
             while crossover_point1 == crossover_point2:  # make sure they are not the same
-                crossover_point2 = np.random.randint(1, len(self.chromosomes[1]))
+                crossover_point2 = np.random.randint(1, len(chromosomes[1]))
             child1, child2 = [], []
             from_mom = True
-            for i in range(len(self.chromosomes[1])):
+            for i in range(len(chromosomes[1])):
                 if i == crossover_point1:  # if hit crossover point, swap allele selection
                     from_mom = False
                 if i == crossover_point2:  # if hit crossover point, swap allele selection
@@ -209,31 +217,32 @@ class Genetic_Algorithm:
     def evaluate_population(self):
         evaluation = []
         for chromosome in self.population:
-            chromosome_eval = []
+            eval_machines = np.unique(self.population)
             for index, job in enumerate(chromosome):
-                chromosome_eval[job] = chromosome_eval[job] + self.problem[index]
-            evaluation.append(chromosome_eval)
-        print(max(evaluation))
-        return max(evaluation)
+                eval_machines[job-1] = eval_machines[job-1] + self.problem[index]
+            evaluation.append(max(eval_machines))
+        return evaluation
 
 
 ''' Hyperparameters '''
-population_size = 1
+population_size = 2
 num_jobs = 300
 num_machines = 20
 
 
 ''' Main script '''
 problem_1 = get_problem_1()
-problem_2 = get_problem_2()
+#problem_2 = get_problem_2() # TODO: throws error !
 problem_3 = get_problem_3()
-equal_initializer = Equal_Initializer(num_jobs,num_machines,population_size)
-random_initializer = Random_Initializer(num_jobs,num_machines,population_size)
 
-ga_equal = Genetic_Algorithm(problem_1, equal_initializer, 0,0,0,0)
-ga_random = Genetic_Algorithm(problem_1, random_initializer, 0, 0, 0, 0)
-print(ga_equal.population)
-print(ga_random.population)
-print(ga_random.evaluate_population())
+equal_initializer = Equal_Initializer(num_jobs,num_machines,population_size)
+random_initializer = Random_Initializer(num_jobs,num_machines,population_size) # TODO: change float output to int
+one_point_crossover = One_Point_Crossover()
+two_point_crossover = Two_Point_Crossover()
+
+ga_1 = Genetic_Algorithm(problem_1, equal_initializer, 0, one_point_crossover, 0, 0)
+ga_2 = Genetic_Algorithm(problem_1, random_initializer, 0, two_point_crossover, 0, 0)
+
+print(ga_1.evaluate_population())
 
 
