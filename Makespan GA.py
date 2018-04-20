@@ -166,7 +166,8 @@ class Recombiner():
 
 class Genetic_Algotihm:
 
-    def __init__(self, initializer, selector, recombiner, mutator, replacer):
+    def __init__(self, problem, initializer, selector, recombiner, mutator, replacer):
+        self.problem = problem
         self.initializer = initializer
         self.selector = selector
         self.recombiner = recombiner
@@ -176,8 +177,13 @@ class Genetic_Algotihm:
         self.population = self.initializer.initialize()
 
     def evaluate_population(self):
+        evaluation = []
         for chromosome in self.population:
+            chromosome_eval = []
             for index, job in enumerate(chromosome):
+                chromosome_eval[job] = chromosome_eval[job] + self.problem[index]
+            evaluation.append(chromosome_eval)
+        return max(evaluation)
 
 
 ''' hyperparameters '''
@@ -186,13 +192,16 @@ num_jobs = 300
 num_machines = 20
 
 ''' main script '''
+problem_1 = get_problem_1()
+#problem_2 = get_problem_2()
+#problem_3 = get_problem_3()
 #equal_initializer = Equal_Initializer(num_jobs,num_machines,population_size)
 random_initializer = Random_Initializer(num_jobs,num_machines,population_size)
 
 #ga_equal = Genetic_Algotihm(equal_initializer, 0,0,0,0)
-ga_random = Genetic_Algotihm(random_initializer,0,0,0,0)
+ga_random = Genetic_Algotihm(problem_1, random_initializer,0,0,0,0)
 #print(ga_equal.population)
 print(ga_random.population)
-
+print(ga_random.evaluate_population)
 
 
