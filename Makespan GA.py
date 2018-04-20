@@ -43,11 +43,10 @@ class Initializer(ABC):
         pass
 
 class Equal_Initializer(Initializer):
-    def __init__(self, num_jobs, num_machines):
+    def __init__(self, num_jobs, num_machines, population_size):
         self.num_jobs = num_jobs
         self.num_machines = num_machines
-    def random(self):
-        return np.random.randint(1, self.num_machines + 1, self.num_jobs)
+        self.population_size = population_size
     def initialize(self):
         per_machine = self.num_jobs // self.num_machines
         init = []
@@ -57,6 +56,17 @@ class Equal_Initializer(Initializer):
         if len(init) != self.num_jobs:
             for i in range(self.num_jobs - len(init)):
                 init = np.append(init, 1)
+        return init
+
+class Random_Initializer(Initializer):
+    def __init__(self, num_jobs, num_machines, population_size):
+        self.num_jobs = num_jobs
+        self.num_machines = num_machines
+        self.population_size = population_size
+    def initialize(self):
+        init = np.zeros((self.population_size, self.num_jobs))
+        for i in range(self.population_size):
+            init[i] = np.random.randint(1, self.num_machines + 1, self.num_jobs)
         return init
 
 
@@ -78,17 +88,6 @@ class Selector():
         return max(candidates)
 
 
-# In[9]:
-
-
-i = Equal_Initializer(300, 20)
-print(i.initialize())
-print(len(i.initialize()))
-
-
-# script
-population_size = 100
-problem_nr = 1
 
 class Genetic_Algotihm:
 
@@ -99,12 +98,22 @@ class Genetic_Algotihm:
         self.mutator = mutator
         self.replacer = replacer
 
-    def generate_population(self, population_size, problem_nr, initializer):
-        population = []
-        for i in range(population_size):
-            population.append(self.inializer.initialize())
-        return population
+        self.population = initializer.initialize()
 
-ga = Genetic_Algotihm(i, i, i , i ,i)
-print(ga.generate_population(population_size, 5, 3))
+    def evaluate_population(self):
+        pass
+
+''' hyperparameters '''
+population_size = 1
+num_jobs = 300
+num_machines = 20
+
+''' main script '''
+equal_initializer = Equal_Initializer(num_jobs,num_machines,population_size)
+random_initializer = Random_Initializer(num_jobs,num_machines,population_size)
+
+ga_equal = Genetic_Algotihm(equal_initializer, 0,0,0,0)
+ga_random = Genetic_Algotihm(random_initializer,0,0,0,0)
+print(ga_equal.population)
+print(ga_random.population)
 
