@@ -163,6 +163,34 @@ class Recombiner():
             return child1, child2
         else:  # if no crossover, return parents
             return mom, dad
+        
+class Mutator():
+    #to-do!! (Inga)
+    def random(self, offspring, num_jobs):
+        probabilty_m = np.random.random()
+        if probabilty_m < 0.1:
+            #randomly choses a position that gets mutated
+            bit = np.random.randint(0, (len(offspring) - 1))
+            mutation = np.random.randint(1, num_jobs)            
+            while offspring[bit] == mutation:
+                mutation = np.random.randint(1, num_jobs)                
+            offspring[bit] = mutation            
+            return offspring        
+        else:
+            return offspring
+    
+    def lazy(self, offspring, num_jobs):
+        probabilty_m = np.random.random()
+        if probabilty_m < 0.1:
+            #randomly choses a position that gets mutated
+            bit = np.random.randint(0, (len(offspring) - 1))
+            mutation = np.random.randint(1, num_jobs)        
+            while offspring[bit] == mutation:
+                mutation = np.random.randint(1, num_jobs)                
+                offspring[bit] = mutation            
+            return offspring      
+        else:
+            return offspring                       
 
 class Genetic_Algotihm:
 
