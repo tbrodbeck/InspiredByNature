@@ -203,39 +203,61 @@ class Two_Point_Crossover(Recombiner):
         else:  # if no crossover, return parents
             return mom, dad
 
-
+        
 class Mutator():
-    def mutate(self, offspring, num_jobs):
-        pass
-
-class Random_Mutator(Mutator):
-    # to-do!! (Inga)
-    def mutate(self, offspring, num_jobs):
-        probabilty_m = np.random.random()
-        if probabilty_m < 0.1:
-            # randomly choses a position that gets mutated
-            bit = np.random.randint(0, (len(offspring) - 1))
-            mutation = np.random.randint(1, num_jobs)
-            while offspring[bit] == mutation:
+    
+    def random(self, offspring, num_jobs):
+        """
+        Changes each allel of each chromosome with a certain probabilty p_m 
+        """
+        mutated_offspring = []
+        # mutate all chromosomes of the offspring
+        for a in range(len(offspring)):
+            chromosome = offspring[a]
+            # mutate all allels of a chromsome with probability p_m
+            for i in range(len(chromosome)):
+                # define p_m randomly
+                probabilty_m = np.random.random()
+                # threshold, for which an allel get changed
+                if probabilty_m < 0.5:
+                    mutation = np.random.randint(1, num_jobs)
+                    # as long as the mutation has the same value than the allel initially had, generate new mutation
+                    while chromosome[i] == mutation:
+                        mutation = np.random.randint(1, num_jobs)
+                    # substitute allel by its mutation    
+                    chromosome[i] = mutation 
+                else: 
+                    chromosome[i] = chromosome[i]
+            # generate the new offspring by collecting all mutated chromosomes
+            mutated_offspring.append(chromosome)
+        return mutated_offspring
+    
+    def lazy(self, offspring, num_jobs):
+        """
+        Changes only one allel of each chromosome with a certain probabilty p_m
+        """
+        mutated_offspring = []
+        # mutate all chromosomes of the offspring
+        for a in range(len(offspring)):
+            chromosome = offspring[a]
+            # define p_m randomly
+            probabilty_m = np.random.random()
+            # threshold, for which an allel get changed
+            if probabilty_m < 0.5:
+                # defines the allel that gets changed and the mutation itself randomly
+                allel = np.random.randint(0, (len(chromosome)))
                 mutation = np.random.randint(1, num_jobs)
-            offspring[bit] = mutation
-            return offspring
-        else:
-            return offspring
-
-class Lazy_Mutator(Mutator):
-    def mutate(self, offspring, num_jobs):
-        probabilty_m = np.random.random()
-        if probabilty_m < 0.1:
-            # randomly choses a position that gets mutated
-            bit = np.random.randint(0, (len(offspring) - 1))
-            mutation = np.random.randint(1, num_jobs)
-            while offspring[bit] == mutation:
-                mutation = np.random.randint(1, num_jobs)
-                offspring[bit] = mutation
-            return offspring
-        else:
-            return offspring
+                # as long as the mutation has the same value than the allel initially had, generate new mutation
+                while chromosome[allel] == mutation:
+                    mutation = np.random.randint(1, num_jobs)
+                # substitute allel by its mutation
+                chromosome[allel] = mutation
+                # generate the new offspring by collecting all mutated chromosomes
+                mutated_offspring.append(chromosome)
+            else:
+                # collect the unmutated chromosome in the new offspring
+                mutated_offspring.append(chromosome)
+        return mutated_offspring     
 
 
 ''' Main algorithm '''
