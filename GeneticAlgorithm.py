@@ -64,9 +64,41 @@ class Random_Initializer(Initializer):
 
 
 class Selector():
-    def roulette(self):
-        raise NotImplementedError
-    def tournament(self, candidates):
+    def __init__(self, selection_size):
+        self.size = selection_size
+
+    def select(self, population, evaluation):
+        pass
+
+class Roulette_Wheel_Selector(Selector):
+    def select(self, population, evaluation):
+        selection_list = []
+        # for how many elements we want to select
+        for elem in range(self.size):
+            sum_fittness = 0
+            for fittness in evaluation:
+                sum_fittness = sum_fittness + fittness
+            # calculate cumulated probabilities
+            probabilities = []
+            last_prob = 0
+            for fittness in evaluation:
+                new_prob = fittness/sum_fittness + last_prob
+                probabilities.append(new_prob)
+                last_prob = new_prob
+            # select a chromosome according to its probability
+            rand = np.random.random()
+            for index, probability in enumerate(probabilities):
+                if probability < rand:
+                    continue
+                else:
+                    selection_list.append(population[index])
+                    break
+        return selection_list
+
+
+class Tournament_Selector(Selector):
+    # TODO
+    def select(self, population, evaluation):
         return max(candidates)
 
 
@@ -173,8 +205,12 @@ class Two_Point_Crossover(Recombiner):
 
 
 class Mutator():
+    def mutate(self, offspring, num_jobs):
+        pass
+
+class Random_Mutator(Mutator):
     # to-do!! (Inga)
-    def random(self, offspring, num_jobs):
+    def mutate(self, offspring, num_jobs):
         probabilty_m = np.random.random()
         if probabilty_m < 0.1:
             # randomly choses a position that gets mutated
@@ -187,7 +223,8 @@ class Mutator():
         else:
             return offspring
 
-    def lazy(self, offspring, num_jobs):
+class Lazy_Mutator(Mutator):
+    def mutate(self, offspring, num_jobs):
         probabilty_m = np.random.random()
         if probabilty_m < 0.1:
             # randomly choses a position that gets mutated
@@ -215,19 +252,34 @@ class Genetic_Algorithm:
         self.replacer = replacer
 
     def evaluate_population(self):
+        """ Evalutator """
         evaluation = []
+        # iterates all chromosomes in population and evaluates them
         for chromosome in self.population:
+            # create a list of the machines
             eval_machines = np.unique(self.population)
+            # calculate total processing time for every machine
             for index, job in enumerate(chromosome):
                 eval_machines[job-1] = eval_machines[job-1] + self.problem[index]
+            # take max machine-time
             evaluation.append(max(eval_machines))
-        return evaluation
+        self.evaluation = evaluation
 
+    def run_episode(self):
+        evaluation = self.evaluate_population()
+        self.selection = self.selector.select(self.population, self.evaluation)
+        self.recombination = self.recombiner.recombine(self.selection)
+        # print(self.recombination) # not sure if it works yet
+        # print(np.shape(self.recombination))
+        self.mutation = self.mutator.mutate(self.recombination, num_jobs-1)
+        # print(self.mutation)
+        # TODO replacer.replace(self.population, self.mutation)
 
 ''' Hyperparameters '''
-population_size = 2
+population_size = 10
 num_jobs = 300
 num_machines = 20
+selection_size = 4
 
 
 ''' Main script '''
@@ -239,10 +291,13 @@ equal_initializer = Equal_Initializer(num_jobs,num_machines,population_size)
 random_initializer = Random_Initializer(num_jobs,num_machines,population_size) # TODO: change float output to int
 one_point_crossover = One_Point_Crossover()
 two_point_crossover = Two_Point_Crossover()
+lazy_mutator = Lazy_Mutator()
+roulette_wheel_selector = Roulette_Wheel_Selector(selection_size)
 
-ga_1 = Genetic_Algorithm(problem_1, equal_initializer, 0, one_point_crossover, 0, 0)
-ga_2 = Genetic_Algorithm(problem_1, random_initializer, 0, two_point_crossover, 0, 0)
+ga_1 = Genetic_Algorithm(problem_1, equal_initializer, roulette_wheel_selector, one_point_crossover, lazy_mutator, 0)
+ga_2 = Genetic_Algorithm(problem_1, random_initializer, roulette_wheel_selector, two_point_crossover, lazy_mutator, 0)
 
-print(ga_1.evaluate_population())
+print(np.shape(ga_1.population))
+ga_1.run_episode()
 
 
