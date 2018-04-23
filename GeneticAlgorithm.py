@@ -57,7 +57,7 @@ class Equal_Initializer(Initializer):
 class Random_Initializer(Initializer):
 
     def initialize(self):
-        init = np.zeros((self.population_size, self.num_jobs))
+        init = np.zeros((self.population_size, self.num_jobs), dtype=np.int16)
         for i in range(self.population_size):
             init[i] = np.random.randint(1, self.num_machines + 1, self.num_jobs)
         return init
@@ -73,20 +73,24 @@ class Selector():
 class Roulette_Wheel_Selector(Selector):
     def select(self, population, evaluation):
         selection_list = []
+        maximum = np.max(evaluation)
+        evaluation = maximum - evaluation
         # for how many elements we want to select
+
+        sum_fittness = 0
+        for fittness in evaluation:
+            sum_fittness = sum_fittness + fittness
+        # calculate cumulated probabilities
+        probabilities = []
+        last_prob = 0
+        for fittness in evaluation:
+            new_prob = fittness / sum_fittness + last_prob
+            probabilities.append(new_prob)
+            last_prob = new_prob
+        # select a chromosome according to its probability
+        rand = np.random.random()
+
         for elem in range(self.size):
-            sum_fittness = 0
-            for fittness in evaluation:
-                sum_fittness = sum_fittness + fittness
-            # calculate cumulated probabilities
-            probabilities = []
-            last_prob = 0
-            for fittness in evaluation:
-                new_prob = fittness/sum_fittness + last_prob
-                probabilities.append(new_prob)
-                last_prob = new_prob
-            # select a chromosome according to its probability
-            rand = np.random.random()
             for index, probability in enumerate(probabilities):
                 if probability < rand:
                     continue
@@ -204,9 +208,12 @@ class Two_Point_Crossover(Recombiner):
             return mom, dad
 
         
-class Mutator():
-    
-    def random(self, offspring, num_jobs):
+class Mutator(ABC):
+    def mutate(self, offspring, num_jobs):
+        pass
+
+class Random_Mutator(Mutator):
+    def mutate(self, offspring, num_machines):
         """
         Changes each allel of each chromosome with a certain probabilty p_m 
         """
@@ -220,10 +227,10 @@ class Mutator():
                 probabilty_m = np.random.random()
                 # threshold, for which an allel get changed
                 if probabilty_m < 0.5:
-                    mutation = np.random.randint(1, num_jobs)
+                    mutation = np.random.randint(1, num_machines)
                     # as long as the mutation has the same value than the allel initially had, generate new mutation
                     while chromosome[i] == mutation:
-                        mutation = np.random.randint(1, num_jobs)
+                        mutation = np.random.randint(1, num_machines)
                     # substitute allel by its mutation    
                     chromosome[i] = mutation 
                 else: 
@@ -231,8 +238,9 @@ class Mutator():
             # generate the new offspring by collecting all mutated chromosomes
             mutated_offspring.append(chromosome)
         return mutated_offspring
-    
-    def lazy(self, offspring, num_jobs):
+
+class Lazy_Mutator(Mutator):
+    def mutate(self, offspring, num_machines):
         """
         Changes only one allel of each chromosome with a certain probabilty p_m
         """
@@ -246,10 +254,10 @@ class Mutator():
             if probabilty_m < 0.5:
                 # defines the allel that gets changed and the mutation itself randomly
                 allel = np.random.randint(0, (len(chromosome)))
-                mutation = np.random.randint(1, num_jobs)
+                mutation = np.random.randint(1, num_machines)
                 # as long as the mutation has the same value than the allel initially had, generate new mutation
                 while chromosome[allel] == mutation:
-                    mutation = np.random.randint(1, num_jobs)
+                    mutation = np.random.randint(1, num_machines)
                 # substitute allel by its mutation
                 chromosome[allel] = mutation
                 # generate the new offspring by collecting all mutated chromosomes
@@ -257,23 +265,42 @@ class Mutator():
             else:
                 # collect the unmutated chromosome in the new offspring
                 mutated_offspring.append(chromosome)
-        return mutated_offspring     
+        return mutated_offspring
+
+
+class Replacer(ABC):
+
+    def replace(self, population, offspring):
+        pass
+
+class Delete_All_Replacer():
+    def replace(self, population, offspring):
+
+        if len(offspring) < len(population):
+            return False
+
+        self.newPop = []
+
+        offspringList = []
+
+        for i in offspring:
+            list.append(i)
+
+        for i in range(0, len(population)):
+            offspringList.pop(np.random.randint(0, len(offspringList)))
 
 
 ''' Main algorithm '''
 class Genetic_Algorithm:
 
     def __init__(self, problem, initializer, selector, recombiner, mutator, replacer):
-        self.problem = problem
-
         self.population = initializer.initialize()
-
         self.selector = selector
         self.recombiner = recombiner
         self.mutator = mutator
         self.replacer = replacer
 
-    def evaluate_population(self):
+    def evaluate_population(self, problem):
         """ Evalutator """
         evaluation = []
         # iterates all chromosomes in population and evaluates them
@@ -282,20 +309,22 @@ class Genetic_Algorithm:
             eval_machines = np.unique(self.population)
             # calculate total processing time for every machine
             for index, job in enumerate(chromosome):
-                eval_machines[job-1] = eval_machines[job-1] + self.problem[index]
+                eval_machines[job-1] = eval_machines[job-1] + problem[index]
+
             # take max machine-time
             evaluation.append(max(eval_machines))
         self.evaluation = evaluation
+        return evaluation
 
-    def run_episode(self):
-        evaluation = self.evaluate_population()
+    def run_episode(self, num_jobs, problem):
+        evaluation = self.evaluate_population(problem)
         self.selection = self.selector.select(self.population, self.evaluation)
         self.recombination = self.recombiner.recombine(self.selection)
         # print(self.recombination) # not sure if it works yet
         # print(np.shape(self.recombination))
-        self.mutation = self.mutator.mutate(self.recombination, num_jobs-1)
+        self.mutation = self.mutator.mutate(self.recombination, num_machines)
         # print(self.mutation)
-        # TODO replacer.replace(self.population, self.mutation)
+        self.replacer.replace(self.population, self.mutation)
 
 ''' Hyperparameters '''
 population_size = 10
@@ -314,12 +343,16 @@ random_initializer = Random_Initializer(num_jobs,num_machines,population_size) #
 one_point_crossover = One_Point_Crossover()
 two_point_crossover = Two_Point_Crossover()
 lazy_mutator = Lazy_Mutator()
+random_mutator = Random_Mutator()
 roulette_wheel_selector = Roulette_Wheel_Selector(selection_size)
+delete_all_replacer = Delete_All_Replacer()
 
-ga_1 = Genetic_Algorithm(problem_1, equal_initializer, roulette_wheel_selector, one_point_crossover, lazy_mutator, 0)
+ga_1 = Genetic_Algorithm(problem_1, random_initializer, roulette_wheel_selector, two_point_crossover, random_mutator, delete_all_replacer)
 ga_2 = Genetic_Algorithm(problem_1, random_initializer, roulette_wheel_selector, two_point_crossover, lazy_mutator, 0)
 
 print(np.shape(ga_1.population))
-ga_1.run_episode()
 
-
+print(ga_1.evaluate_population(problem_1))
+for i in range(100):
+    ga_1.run_episode(num_jobs, problem_1)
+print(ga_1.evaluate_population(problem_1))
