@@ -101,10 +101,24 @@ class Roulette_Wheel_Selector(Selector):
 
 
 class Tournament_Selector(Selector):
-    # TODO
-    def select(self, population, evaluation):
-        return max(candidates)
+    def select(self, population, evaluation, tournaments=8, competitors=2):
+        winner = []
+        for s in range(tournaments):
+            candidates = []
+            bestValue = 0
+            bestPos = 0
 
+            for c in range(competitors):
+                candidates.append(population.pop(np.random.randint(0, len(population)))
+            
+            for i in range(candidates):
+                if evaluation[candidates[i]] > bestValue:
+                    bestValue = evaluation[candidates[i]]
+                    bestPos = i
+            
+            winner.append(candidates[bestPos])
+        return winner
+            
 
 class Recombiner(ABC):
     """
@@ -273,21 +287,34 @@ class Replacer(ABC):
     def replace(self, population, offspring):
         pass
 
-class Delete_All_Replacer():
+class DeleteAll(Replacer):
+    
+    def __init__(self):
+        
+        self.newPop = set()
+        
     def replace(self, population, offspring):
-
+        
         if len(offspring) < len(population):
             return False
+        
+        self.newPop = []  
+        
+        for i in range(len(population)):  
+            newPop.append(offspring.pop(np.random.randint(0,len(offspring))))
+                        
+        return newPop
+    
+class SteadyState(Replacer):
+    
+    def __init__(self):
+        
+        self.newPop = set()
+            
+    def replace(self, population, offspring, number=8):
+        
+        
 
-        self.newPop = []
-
-        offspringList = []
-
-        for i in offspring:
-            list.append(i)
-
-        for i in range(0, len(population)):
-            offspringList.pop(np.random.randint(0, len(offspringList)))
 
 
 ''' Main algorithm '''

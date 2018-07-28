@@ -1,0 +1,9 @@
+Dateiname;Größe;Ersteller;Datum;Name;Beschreibung;Pfad
+capacity.txt;134;"Dr. rer. nat. Nico Potyka";"2018-06-19 15:25:45";capacity.txt;;capacity.txt
+demand.txt;300;"Dr. rer. nat. Nico Potyka";"2018-06-19 15:25:59";demand.txt;;demand.txt
+distance.txt;39105;"Dr. rer. nat. Nico Potyka";"2018-06-19 15:26:09";distance.txt;;distance.txt
+transportation_cost.txt;79;"Dr. rer. nat. Nico Potyka";"2018-06-19 15:26:20";transportation_cost.txt;;transportation_cost.txt
+capacity.txt;134;"Dr. rer. nat. Nico Potyka";"2018-06-19 15:26:39";capacity.txt;;capacity[1].txt
+demand.txt;282;"Dr. rer. nat. Nico Potyka";"2018-06-19 15:26:50";demand.txt;;demand[1].txt
+distance.txt;40033;"Dr. rer. nat. Nico Potyka";"2018-06-19 15:27:01";distance.txt;;distance[1].txt
+transportation_cost.txt;79;"Dr. rer. nat. Nico Potyka";"2018-06-19 15:27:12";transportation_cost.txt;;transportation_cost[1].txt
